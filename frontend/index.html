@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CreatorOS - AI 视频爆款复制</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    [v-cloak] { display: none; }
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
+    .gradient-text { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stage-card { transition: all 0.3s ease; }
+    .stage-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+    .stage-done { border-left: 3px solid #10b981; }
+    .stage-running { border-left: 3px solid #f59e0b; animation: pulse 2s infinite; }
+    .stage-pending { border-left: 3px solid #475569; }
+    .stage-failed { border-left: 3px solid #ef4444; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.2s; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .json-viewer { background: #1e293b; border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6; max-height: 400px; overflow-y: auto; }
+    .run-item { transition: all 0.2s; cursor: pointer; }
+    .run-item:hover { background: rgba(102, 126, 234, 0.1); }
+    .run-item.active { background: rgba(102, 126, 234, 0.2); border-left: 3px solid #667eea; }
+    input[type="text"], input[type="url"], select, textarea {
+      background: #1e293b; border: 1px solid #334155; color: #e2e8f0; border-radius: 8px; padding: 10px 14px;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .tab-btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; transition: all 0.2s; }
+    .tab-btn.active { background: rgba(102, 126, 234, 0.2); color: #667eea; }
+    .spinner { border: 3px solid #334155; border-top: 3px solid #667eea; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div id="app" v-cloak class="min-h-screen">
+  <!-- Header -->
+  <header class="glass sticky top-0 z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">C</div>
+        <div>
+          <h1 class="text-xl font-bold gradient-text">CreatorOS</h1>
+          <p class="text-xs text-gray-400">AI 视频爆款复制工具</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button @click="showAccount = true" class="text-sm text-gray-400 hover:text-white transition">账号设置</button>
+        <button @click="refreshRuns" class="text-sm text-gray-400 hover:text-white transition">刷新</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-6 py-8 flex gap-6">
+    <!-- Sidebar: Run History -->
+    <aside class="w-72 flex-shrink-0">
+      <div class="glass rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">历史记录</h2>
+        <div v-if="runs.length === 0" class="text-gray-500 text-sm py-4 text-center">暂无记录</div>
+        <div v-for="run in runs" :key="run.run_id"
+             @click="selectRun(run)"
+             class="run-item rounded-lg p-3 mb-2"
+             :class="{ active: selectedRun && selectedRun.run_id === run.run_id }">
+          <div class="text-sm font-medium truncate">{{ run.run_id }}</div>
+          <div class="text-xs text-gray-500 mt-1">{{ formatStatus(run.meta.status) }}</div>
+          <div class="flex gap-1 mt-2">
+            <span v-for="(stage, idx) in stageNames" :key="idx"
+                  class="w-2 h-2 rounded-full"
+                  :class="{
+                    'bg-green-500': run.stages[stage],
+                    'bg-gray-600': !run.stages[stage]
+                  }"></span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0">
+      <!-- New Task Section -->
+      <div class="glass rounded-xl p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4">新建任务</h2>
+        <div class="flex gap-4 mb-4">
+          <button @click="inputMode = 'url'" class="tab-btn" :class="{ active: inputMode === 'url' }">URL 导入</button>
+          <button @click="inputMode = 'upload'" class="tab-btn" :class="{ active: inputMode === 'upload' }">上传视频</button>
+        </div>
+
+        <div v-if="inputMode === 'url'" class="space-y-4">
+          <div class="flex gap-3">
+            <input v-model="urlInput" type="url" placeholder="粘贴抖音/小红书视频分享链接..."
+                   class="flex-1 text-sm" @keyup.enter="startFromUrl">
+            <button @click="startFromUrl" :disabled="!urlInput || starting"
+                    class="btn-primary px-6 py-2 rounded-lg text-sm font-medium text-white">
+              <span v-if="starting" class="spinner mr-2"></span>
+              {{ starting ? '处理中...' : '开始' }}
+            </button>
+          </div>
+          <div class="flex gap-4 text-sm">
+            <label class="flex items-center gap-2">
+              <span class="text-gray-400">平台:</span>
+              <select v-model="urlPlatform" class="text-sm py-1">
+                <option value="douyin">抖音</option>
+                <option value="xiaohongshu">小红书</option>
+              </select>
+            </label>
+            <label class="flex items-center gap-2">
+              <span class="text-gray-400">模型:</span>
+              <select v-model="urlTarget" class="text-sm py-1">
+                <option value="generic">通用</option>
+                <option value="kling">可灵</option>
+                <option value="jimeng">即梦</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div v-if="inputMode === 'upload'" class="space-y-4">
+          <div class="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-indigo-500 transition cursor-pointer"
+               @click="$refs.fileInput.click()"
+               @dragover.prevent @drop.prevent="handleDrop">
+            <input ref="fileInput" type="file" accept="video/*" @change="handleFileSelect" class="hidden">
+            <div v-if="!uploadFile" class="text-gray-400">
+              <p class="text-lg mb-2">点击或拖拽视频文件到此处</p>
+              <p class="text-sm text-gray-500">支持 MP4/MOV 等常见格式</p>
+            </div>
+            <div v-else class="text-indigo-400">
+              <p class="text-lg mb-2">{{ uploadFile.name }}</p>
+              <p class="text-sm text-gray-500">{{ (uploadFile.size / 1024 / 1024).toFixed(1) }} MB</p>
+            </div>
+          </div>
+          <button v-if="uploadFile" @click="startUpload" :disabled="starting"
+                  class="btn-primary px-6 py-2 rounded-lg text-sm font-medium text-white">
+            <span v-if="starting" class="spinner mr-2"></span>
+            {{ starting ? '上传中...' : '上传并开始处理' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Run Detail -->
+      <div v-if="selectedRun" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">{{ selectedRun.run_id }}</h2>
+          <span class="text-sm px-3 py-1 rounded-full"
+                :class="{
+                  'bg-green-900 text-green-300': selectedRun.meta.status === 'done',
+                  'bg-yellow-900 text-yellow-300': selectedRun.meta.status === 'running',
+                  'bg-red-900 text-red-300': selectedRun.meta.status === 'failed',
+                }">
+            {{ formatStatus(selectedRun.meta.status) }}
+          </span>
+        </div>
+
+        <!-- Pipeline Stages -->
+        <div class="grid gap-4">
+          <!-- Stage 1: Subtitles -->
+          <div class="stage-card glass rounded-xl p-5"
+               :class="getStageClass('subtitles')">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-indigo-900 text-indigo-300 flex items-center justify-center text-sm font-bold">1</span>
+                <h3 class="font-medium">提取字幕</h3>
+              </div>
+              <div class="flex gap-2">
+                <button v-if="selectedRun.stages.subtitles" @click="activeTab = 'subtitles'; showJsonEditor = true"
+                        class="text-xs text-gray-400 hover:text-indigo-400 transition">编辑</button>
+                <button @click="runStage('subtitles')" :disabled="stageRunning"
+                        class="text-xs px-3 py-1 rounded bg-indigo-900 text-indigo-300 hover:bg-indigo-800 transition">
+                  {{ stageRunning && activeStage === 'subtitles' ? '执行中...' : '执行' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="selectedRun.stages.subtitles" class="text-sm text-gray-300">
+              <p>语言: {{ selectedRun.stages.subtitles.language }} | 片段: {{ selectedRun.stages.subtitles.segments?.length || 0 }} 条</p>
+              <p class="text-gray-500 mt-1 truncate">{{ selectedRun.stages.subtitles.full_text }}</p>
+            </div>
+          </div>
+
+          <!-- Stage 2: Reverse Prompt -->
+          <div class="stage-card glass rounded-xl p-5"
+               :class="getStageClass('reverse_prompt')">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-purple-900 text-purple-300 flex items-center justify-center text-sm font-bold">2</span>
+                <h3 class="font-medium">逆向 Prompt</h3>
+              </div>
+              <div class="flex gap-2">
+                <button v-if="selectedRun.stages.reverse_prompt" @click="activeTab = 'reverse_prompt'; showJsonEditor = true"
+                        class="text-xs text-gray-400 hover:text-indigo-400 transition">编辑</button>
+                <button @click="runStage('reverse_prompt')" :disabled="stageRunning"
+                        class="text-xs px-3 py-1 rounded bg-purple-900 text-purple-300 hover:bg-purple-800 transition">
+                  {{ stageRunning && activeStage === 'reverse_prompt' ? '执行中...' : '执行' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="selectedRun.stages.reverse_prompt" class="text-sm text-gray-300">
+              <p>{{ selectedRun.stages.reverse_prompt.summary }}</p>
+              <div class="flex gap-4 mt-2 text-xs text-gray-500">
+                <span>风格: {{ selectedRun.stages.reverse_prompt.style }}</span>
+                <span>分镜: {{ selectedRun.stages.reverse_prompt.shots?.length || 0 }} 个</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 3: Script -->
+          <div class="stage-card glass rounded-xl p-5"
+               :class="getStageClass('script')">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-pink-900 text-pink-300 flex items-center justify-center text-sm font-bold">3</span>
+                <h3 class="font-medium">仿写剧本</h3>
+              </div>
+              <div class="flex gap-2">
+                <button v-if="selectedRun.stages.script" @click="activeTab = 'script'; showJsonEditor = true"
+                        class="text-xs text-gray-400 hover:text-indigo-400 transition">编辑</button>
+                <button @click="runStage('script')" :disabled="stageRunning"
+                        class="text-xs px-3 py-1 rounded bg-pink-900 text-pink-300 hover:bg-pink-800 transition">
+                  {{ stageRunning && activeStage === 'script' ? '执行中...' : '执行' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="selectedRun.stages.script" class="text-sm text-gray-300">
+              <p class="font-medium">{{ selectedRun.stages.script.title }}</p>
+              <p class="text-gray-500 mt-1">钩子: {{ selectedRun.stages.script.hook }}</p>
+              <div class="text-xs text-gray-500 mt-1">场景: {{ selectedRun.stages.script.scenes?.length || 0 }} 个</div>
+            </div>
+          </div>
+
+          <!-- Stage 4: Video Prompts -->
+          <div class="stage-card glass rounded-xl p-5"
+               :class="getStageClass('video_prompts')">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-amber-900 text-amber-300 flex items-center justify-center text-sm font-bold">4</span>
+                <h3 class="font-medium">生成视频 Prompt</h3>
+              </div>
+              <div class="flex gap-2">
+                <button v-if="selectedRun.stages.video_prompts" @click="activeTab = 'video_prompts'; showJsonEditor = true"
+                        class="text-xs text-gray-400 hover:text-indigo-400 transition">编辑</button>
+                <button @click="runStage('video_prompts')" :disabled="stageRunning"
+                        class="text-xs px-3 py-1 rounded bg-amber-900 text-amber-300 hover:bg-amber-800 transition">
+                  {{ stageRunning && activeStage === 'video_prompts' ? '执行中...' : '执行' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="selectedRun.stages.video_prompts" class="text-sm text-gray-300">
+              <p>分镜: {{ selectedRun.stages.video_prompts.clips?.length || 0 }} 个 | 目标模型: {{ selectedRun.stages.video_prompts.target_model }}</p>
+            </div>
+          </div>
+
+          <!-- Stage 5: Generate Video -->
+          <div class="stage-card glass rounded-xl p-5"
+               :class="getStageClass('generation_result')">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-emerald-900 text-emerald-300 flex items-center justify-center text-sm font-bold">5</span>
+                <h3 class="font-medium">生成视频</h3>
+              </div>
+              <div class="flex gap-2">
+                <button @click="runStage('generate')" :disabled="stageRunning"
+                        class="text-xs px-3 py-1 rounded bg-emerald-900 text-emerald-300 hover:bg-emerald-800 transition">
+                  {{ stageRunning && activeStage === 'generate' ? '生成中...' : '生成' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="selectedRun.stages.generation_result" class="text-sm">
+              <div v-for="v in selectedRun.stages.generation_result.videos" :key="v.clip_index" class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full" :class="{
+                  'bg-green-500': v.status === 'done',
+                  'bg-yellow-500': v.status === 'generating',
+                  'bg-red-500': v.status === 'failed'
+                }"></span>
+                <span>{{ v.status === 'done' ? '生成完成' : v.status === 'generating' ? '生成中...' : v.status }}</span>
+              </div>
+              <!-- Video Player -->
+              <div v-if="selectedRun.stages.generation_result.videos?.[0]?.status === 'done'" class="mt-3">
+                <video controls class="w-full max-w-md rounded-lg" :src="`/api/runs/${selectedRun.run_id}/video`"></video>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 6: Publish -->
+          <div class="stage-card glass rounded-xl p-5"
+               :class="selectedRun.has_publish_package ? 'stage-done' : 'stage-pending'">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-cyan-900 text-cyan-300 flex items-center justify-center text-sm font-bold">6</span>
+                <h3 class="font-medium">发布包</h3>
+              </div>
+              <button @click="runStage('publish')" :disabled="stageRunning || !selectedRun.stages.generation_result"
+                      class="text-xs px-3 py-1 rounded bg-cyan-900 text-cyan-300 hover:bg-cyan-800 transition">
+                生成发布包
+              </button>
+            </div>
+            <div v-if="selectedRun.has_publish_package && selectedRun.publish_metadata" class="text-sm text-gray-300">
+              <p>标题: {{ selectedRun.publish_metadata.title }}</p>
+              <p class="text-gray-500 mt-1">平台: {{ selectedRun.publish_metadata.platform }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- JSON Editor Modal -->
+        <div v-if="showJsonEditor" class="glass rounded-xl p-6 mt-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-medium">编辑: {{ activeTab }}</h3>
+            <div class="flex gap-2">
+              <button @click="saveJsonEdit" class="text-xs px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-500 transition">保存</button>
+              <button @click="showJsonEditor = false" class="text-xs px-4 py-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition">取消</button>
+            </div>
+          </div>
+          <textarea v-model="jsonEditContent" class="w-full h-96 text-sm font-mono p-4 rounded-lg"
+                    style="background: #1e293b; color: #e2e8f0; border: 1px solid #334155;"></textarea>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-if="!selectedRun && runs.length === 0" class="glass rounded-xl p-16 text-center">
+        <div class="text-6xl mb-4 opacity-30">🎬</div>
+        <h3 class="text-xl font-medium text-gray-300 mb-2">开始你的第一个爆款复制任务</h3>
+        <p class="text-gray-500 text-sm">粘贴一条爆款视频链接，AI 自动分析并复刻</p>
+      </div>
+
+      <div v-if="!selectedRun && runs.length > 0" class="glass rounded-xl p-16 text-center">
+        <p class="text-gray-400">从左侧选择一个任务查看详情</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Account Settings Modal -->
+  <div v-if="showAccount" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showAccount = false">
+    <div class="glass rounded-xl p-6 w-full max-w-lg mx-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">账号设置</h3>
+        <button @click="showAccount = false" class="text-gray-400 hover:text-white">&times;</button>
+      </div>
+      <div v-if="accountConfig" class="space-y-3">
+        <div>
+          <label class="text-sm text-gray-400">账号名称</label>
+          <input v-model="accountConfig.account_name" type="text" class="w-full mt-1 text-sm">
+        </div>
+        <div>
+          <label class="text-sm text-gray-400">平台</label>
+          <input v-model="accountConfig.platform" type="text" class="w-full mt-1 text-sm">
+        </div>
+        <div>
+          <label class="text-sm text-gray-400">领域</label>
+          <input v-model="accountConfig.niche" type="text" class="w-full mt-1 text-sm">
+        </div>
+        <div>
+          <label class="text-sm text-gray-400">调性</label>
+          <textarea v-model="accountConfig.tone" class="w-full mt-1 text-sm" rows="2"></textarea>
+        </div>
+        <div>
+          <label class="text-sm text-gray-400">目标受众</label>
+          <input v-model="accountConfig.audience" type="text" class="w-full mt-1 text-sm">
+        </div>
+        <div>
+          <label class="text-sm text-gray-400">目标时长(秒)</label>
+          <input v-model.number="accountConfig.target_duration_sec" type="text" class="w-full mt-1 text-sm">
+        </div>
+        <button @click="saveAccount" class="btn-primary w-full py-2 rounded-lg text-sm font-medium text-white mt-4">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div v-if="toast" class="fixed bottom-6 right-6 glass rounded-lg px-4 py-3 text-sm z-50 transition-all"
+       :class="{ 'text-green-400': toast.type === 'success', 'text-red-400': toast.type === 'error' }">
+    {{ toast.message }}
+  </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted, computed } = Vue;
+
+createApp({
+  setup() {
+    const runs = ref([]);
+    const selectedRun = ref(null);
+    const inputMode = ref('url');
+    const urlInput = ref('');
+    const urlPlatform = ref('douyin');
+    const urlTarget = ref('generic');
+    const uploadFile = ref(null);
+    const starting = ref(false);
+    const stageRunning = ref(false);
+    const activeStage = ref('');
+    const activeTab = ref('');
+    const showJsonEditor = ref(false);
+    const jsonEditContent = ref('');
+    const showAccount = ref(false);
+    const accountConfig = ref(null);
+    const toast = ref(null);
+
+    const stageNames = ['subtitles', 'reverse_prompt', 'script', 'video_prompts', 'generation_result'];
+
+    function showToast(message, type = 'success') {
+      toast.value = { message, type };
+      setTimeout(() => { toast.value = null; }, 3000);
+    }
+
+    function formatStatus(status) {
+      const map = {
+        'done': '已完成',
+        'running': '运行中',
+        'failed': '失败',
+        'started': '已启动',
+        'downloading_done': '下载完成',
+      };
+      return map[status] || status || '未知';
+    }
+
+    function getStageClass(stage) {
+      if (!selectedRun.value) return 'stage-pending';
+      if (selectedRun.value.stages[stage]) return 'stage-done';
+      return 'stage-pending';
+    }
+
+    async function refreshRuns() {
+      try {
+        const resp = await fetch('/api/runs');
+        runs.value = await resp.json();
+        // If a run is selected, refresh its data too
+        if (selectedRun.value) {
+          const r = runs.value.find(r => r.run_id === selectedRun.value.run_id);
+          if (r) selectedRun.value = r;
+        }
+      } catch (e) {
+        console.error('Failed to refresh runs:', e);
+      }
+    }
+
+    function selectRun(run) {
+      selectedRun.value = run;
+      showJsonEditor.value = false;
+    }
+
+    async function startFromUrl() {
+      if (!urlInput.value) return;
+      starting.value = true;
+      try {
+        const resp = await fetch('/api/run-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: urlInput.value,
+            platform: urlPlatform.value,
+            target_model: urlTarget.value,
+          })
+        });
+        const data = await resp.json();
+        showToast(`任务已启动: ${data.run_id}`);
+        urlInput.value = '';
+        // Poll for updates
+        startPolling(data.run_id);
+      } catch (e) {
+        showToast('启动失败: ' + e.message, 'error');
+      } finally {
+        starting.value = false;
+      }
+    }
+
+    function handleFileSelect(e) {
+      uploadFile.value = e.target.files[0] || null;
+    }
+
+    function handleDrop(e) {
+      uploadFile.value = e.dataTransfer.files[0] || null;
+    }
+
+    async function startUpload() {
+      if (!uploadFile.value) return;
+      starting.value = true;
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadFile.value);
+        const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await resp.json();
+        showToast(`上传成功: ${data.run_id}`);
+        uploadFile.value = null;
+        startPolling(data.run_id);
+      } catch (e) {
+        showToast('上传失败: ' + e.message, 'error');
+      } finally {
+        starting.value = false;
+      }
+    }
+
+    let pollTimer = null;
+    function startPolling(runId) {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        await refreshRuns();
+        const run = runs.value.find(r => r.run_id === runId);
+        if (run && (run.meta.status === 'done' || run.meta.status === 'failed')) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          if (run.meta.status === 'done') showToast('任务完成!');
+          else showToast('任务失败: ' + (run.meta.error || '未知错误'), 'error');
+        }
+      }, 3000);
+    }
+
+    async function runStage(stage) {
+      if (!selectedRun.value) return;
+      stageRunning.value = true;
+      activeStage.value = stage;
+      try {
+        const resp = await fetch(`/api/stage/${stage}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            run_id: selectedRun.value.run_id,
+            target_model: urlTarget.value,
+          })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || '执行失败');
+        }
+        showToast(`${stage} 执行完成`);
+        await refreshRuns();
+        // Re-select to refresh detail
+        const run = runs.value.find(r => r.run_id === selectedRun.value.run_id);
+        if (run) selectedRun.value = run;
+      } catch (e) {
+        showToast(`${stage} 失败: ${e.message}`, 'error');
+      } finally {
+        stageRunning.value = false;
+        activeStage.value = '';
+      }
+    }
+
+    async function saveJsonEdit() {
+      try {
+        const data = JSON.parse(jsonEditContent.value);
+        const resp = await fetch('/api/stage', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            run_id: selectedRun.value.run_id,
+            stage: activeTab.value,
+            data: data,
+          })
+        });
+        if (!resp.ok) throw new Error('保存失败');
+        showToast('已保存');
+        showJsonEditor.value = false;
+        await refreshRuns();
+        const run = runs.value.find(r => r.run_id === selectedRun.value.run_id);
+        if (run) selectedRun.value = run;
+      } catch (e) {
+        showToast('保存失败: ' + e.message, 'error');
+      }
+    }
+
+    // Open JSON editor with current stage data
+    const origActiveTab = activeTab;
+
+    async function loadAccount() {
+      try {
+        const resp = await fetch('/api/account');
+        accountConfig.value = await resp.json();
+      } catch (e) {
+        console.error('Failed to load account:', e);
+      }
+    }
+
+    async function saveAccount() {
+      try {
+        await fetch('/api/account', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(accountConfig.value)
+        });
+        showToast('账号设置已保存');
+        showAccount.value = false;
+      } catch (e) {
+        showToast('保存失败: ' + e.message, 'error');
+      }
+    }
+
+    onMounted(async () => {
+      await refreshRuns();
+      await loadAccount();
+    });
+
+    return {
+      runs, selectedRun, inputMode, urlInput, urlPlatform, urlTarget,
+      uploadFile, starting, stageRunning, activeStage, activeTab,
+      showJsonEditor, jsonEditContent, showAccount, accountConfig, toast,
+      stageNames, formatStatus, getStageClass, showToast,
+      refreshRuns, selectRun, startFromUrl, handleFileSelect, handleDrop,
+      startUpload, runStage, saveJsonEdit, saveAccount,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

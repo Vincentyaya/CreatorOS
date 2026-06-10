@@ -1,0 +1,14 @@
+# 核心
+google-genai>=0.3.0       # Gemini,原生理解视频 + 语音转写字幕
+openai>=1.0.0             # Qwen VL(通过 OpenAI 兼容 API 调用 DashScope)
+
+# Web
+fastapi>=0.100.0          # Web API
+uvicorn>=0.23.0           # ASGI 服务器
+python-multipart>=0.0.6   # 文件上传
+
+# 工具
+python-dotenv>=1.0.0      # 环境变量管理
+pydantic>=2.0             # 结构化数据校验
+typer>=0.12               # CLI
+rich>=13.0                # 终端输出美化
