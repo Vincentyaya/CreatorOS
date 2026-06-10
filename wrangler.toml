@@ -1,0 +1,9 @@
+name = "creatoros"
+main = "server.py"
+compatibility_date = "2026-06-10"
+
+[site]
+bucket = "./frontend"
+
+[vars]
+ENVIRONMENT = "production"
