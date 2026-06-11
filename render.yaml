@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: creatoros
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: QWEN_API_KEY
+        sync: false
+      - key: JIMENG_ACCESS_KEY_ID
+        sync: false
+      - key: JIMENG_SECRET_ACCESS_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
