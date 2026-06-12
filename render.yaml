@@ -1,11 +1,10 @@
 services:
   - type: web
     name: creatoros
-    env: python
+    env: docker
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python server.py
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: QWEN_API_KEY
         sync: false
