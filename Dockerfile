@@ -2,10 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# 先装系统依赖
+# 装系统依赖 + 视频下载工具
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir you-get
 
 # 分步安装依赖（减少内存峰值）
 COPY requirements.txt .

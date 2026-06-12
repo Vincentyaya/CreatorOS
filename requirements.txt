@@ -1,6 +1,8 @@
 # 核心
 google-genai>=0.3.0       # Gemini,原生理解视频 + 语音转写字幕
 openai>=1.0.0             # Qwen VL(通过 OpenAI 兼容 API 调用 DashScope)
+volcengine>=1.0.0         # 火山引擎 SDK(即梦/小云雀签名调用)
+requests>=2.28.0          # HTTP 请求(视频下载/生成)
 
 # Web
 fastapi>=0.100.0          # Web API
