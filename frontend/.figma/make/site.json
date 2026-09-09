@@ -1,0 +1,10 @@
+{
+  "description": "This AI-driven content growth platform empowers creators to generate viral content efficiently, offering tools for trend analysis, character development, and performance review.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

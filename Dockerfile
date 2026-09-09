@@ -1,22 +1,19 @@
-FROM python:3.12-slim
+FROM node:22-bookworm-slim AS frontend
+WORKDIR /build
+RUN corepack enable
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY frontend/ ./
+RUN pnpm build
 
+FROM python:3.12-slim-bookworm
 WORKDIR /app
-
-# 装系统依赖 + 视频下载工具
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install --no-cache-dir you-get
-
-# 分步安装依赖（减少内存峰值）
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制代码
-COPY . .
-
-# Render 会用 PORT 环境变量
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements.txt backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+COPY backend/ backend/
+COPY frontend/public/ frontend/public/
+COPY --from=frontend /build/dist frontend/dist/
+ENV CREATOROS_DATA_DIR=/app/backend/runtime VIDEO_RENDER_STRATEGY=provider HAPPYHORSE_RESOLUTION=1080P
 EXPOSE 10000
-
-CMD ["python", "server.py"]
+CMD ["sh", "-c", "uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1"]

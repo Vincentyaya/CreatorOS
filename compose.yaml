@@ -1,0 +1,13 @@
+services:
+  creatoros:
+    build: .
+    restart: unless-stopped
+    env_file: backend/.env
+    environment:
+      VIDEO_RENDER_STRATEGY: provider
+      HAPPYHORSE_MODEL: happyhorse-1.1-r2v
+      HAPPYHORSE_RESOLUTION: 1080P
+    ports:
+      - "127.0.0.1:8080:8001"
+    volumes:
+      - ./backend/runtime:/app/backend/runtime
