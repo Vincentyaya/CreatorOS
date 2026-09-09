@@ -396,6 +396,9 @@ async def update_account(data: dict):
     return {"ok": True}
 
 
+# Keep the existing Render start command while exporting the v0.2 application.
+from backend.app import app
+
 if __name__ == "__main__":
     import os
     import uvicorn
