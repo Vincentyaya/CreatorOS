@@ -28,7 +28,15 @@ function Avatar({ character }: { character: ContentCharacter }) {
 }
 
 export default function Generate({ account, capabilities }: { account: AccountSettings; capabilities: Capabilities | null }) {
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(() => {
+    if (readLocal("creatoros_new_from_analysis")) return 0
+    const saved = readLocal("creatoros_content_step")
+    if (saved !== null) {
+      const parsed = Number(saved)
+      if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 3) return parsed
+    }
+    return readLocal("creatoros_content_job") || readLocal("creatoros_draft_id") ? 2 : 0
+  })
   const [topicIndex, setTopicIndex] = useState(0)
   const [customTopic, setCustomTopic] = useState(() => {
     const saved = readLocal("creatoros_content_topic") ?? ""
@@ -97,6 +105,7 @@ export default function Generate({ account, capabilities }: { account: AccountSe
     if (next === 1 && !topic) return
     if (next >= 2 && !characters.length) return
     setStep(next)
+    writeLocal("creatoros_content_step", String(next))
     if (next === 2 && !workflow.draft) void workflow.generate(capabilities?.script ? "live" : "demo")
   }
 

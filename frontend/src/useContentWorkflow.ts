@@ -13,13 +13,13 @@ export function useContentWorkflow(characters: ContentCharacter[], topic: string
     setDraft(result)
     setScript(result.script)
     writeLocal("creatoros_draft_id", result.id)
-    setHistory((items) => [result, ...items.filter((d) => d.id !== result.id)])
+    setHistory((items) => result.video ? [result, ...items.filter((d) => d.id !== result.id)] : items.filter((d) => d.id !== result.id))
     onRestore(result)
   }
   const task = useJob<Draft>("creatoros_content_job", accept)
   useEffect(() => {
     let active = true
-    api<Draft[]>("/drafts").then((items) => { if (active) setHistory(items) }).catch((e) => { if (active) setError(errorText(e)) })
+    api<Draft[]>("/drafts").then((items) => { if (active) setHistory(items.filter((item) => Boolean(item.video))) }).catch((e) => { if (active) setError(errorText(e)) })
     if (readLocal("creatoros_new_from_analysis")) {
       task.clear()
       writeLocal("creatoros_draft_id", null)

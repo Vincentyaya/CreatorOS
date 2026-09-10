@@ -13,6 +13,7 @@ export default function ContentOutput({ step, workflow: w, capabilities, charact
   characters: ContentCharacter[]; channels: Set<string>; toggleChannel: (key: string) => void;
 }) {
   const [editing, setEditing] = useState(false)
+  const [selectedHistoryId, setSelectedHistoryId] = useState("")
   const s = w.script
   const videoStale = !!w.draft && !!s && JSON.stringify(s.scenes) !== JSON.stringify(w.draft.script.scenes)
   const patchScene = (index: number, narration: string) => {
@@ -20,32 +21,43 @@ export default function ContentOutput({ step, workflow: w, capabilities, charact
   }
   return (
     <div className="max-w-5xl">
-      <div className="mb-5 flex flex-wrap items-center gap-3 text-[13px]">
-        <span className="text-sub">{w.draft?.mode === "live" ? "AI 生成" : "示例剧本"}</span>
-        {w.analysisId && <span className="text-primary">已关联拆解报告</span>}
-        <select aria-label="草稿历史" disabled={w.busy} value={w.draft?.id ?? ""} onChange={(e) => e.target.value && w.restore(e.target.value)} className="ml-auto max-w-full rounded-lg border border-line bg-card px-3 py-2">
-          <option value="">历史草稿</option>
-          {w.history.map((d) => <option key={d.id} value={d.id}>{d.script.title} · {d.mode === "demo" ? "示例" : "AI"}</option>)}
+      <div className="mb-5 flex justify-end">
+        <select aria-label="草稿历史" disabled={w.busy} value={selectedHistoryId} onChange={(e) => { setSelectedHistoryId(e.target.value); if (e.target.value) w.restore(e.target.value) }} className={"max-w-full rounded-lg border border-line bg-card px-3 py-2 text-[13px] outline-none focus:border-primary " + (selectedHistoryId ? "text-ink" : "text-sub")}>
+          <option value="" disabled hidden className="text-sub">查看历史草稿</option>
+          {w.history.map((d) => <option key={d.id} value={d.id}>{d.script.title}</option>)}
         </select>
       </div>
-      {w.busy && <p role="status" className="mb-4 text-[14px] text-primary">{w.stage}</p>}
+      {w.busy && (
+        <div role="status" aria-live="polite" aria-busy="true" className="mb-5 flex items-center gap-4 rounded-lg border border-primary/25 bg-primary/[0.05] p-4 sm:p-5">
+          <span className="size-6 shrink-0 animate-spin rounded-full border-2 border-primary/20 border-t-primary" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-primary">{w.stage || "正在生成内容…"}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-sub">AI 正在处理，请勿重复点击。生成完成后结果会自动显示，也可以稍后返回查看。</p>
+          </div>
+        </div>
+      )}
       {w.error && <p role="alert" className="mb-4 whitespace-pre-wrap break-words text-[14px] text-red-600">{w.error}</p>}
       {w.notice && <p role="status" className="mb-4 text-[14px] text-success">{w.notice}</p>}
-      {!s && <button disabled={w.busy} onClick={() => w.generate("demo")} className="rounded-lg border border-line bg-card px-4 py-2 text-[14px]">载入示例剧本</button>}
       {step === 2 && (
         <>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <button disabled={w.busy || !capabilities?.script} onClick={() => { setEditing(false); void w.generate("live") }} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"><Sparkle className="size-4" />{w.draft?.mode === "live" ? "重新生成剧本" : "AI 生成我的剧本"}</button>
-            <button disabled={w.busy} onClick={() => { setEditing(false); void w.generate("demo") }} className="rounded-lg border border-line bg-card px-4 py-2.5 text-[14px]">使用示例剧本</button>
-            {!capabilities?.script && <span className="text-[13px] text-sub">模型未配置</span>}
-          </div>
-          {s && <div className="grid gap-6 lg:grid-cols-2">
-            <section className="min-w-0 rounded-lg border border-line bg-card">
-              <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+          {!capabilities?.script && <p className="mb-4 text-[13px] text-sub">模型未配置</p>}
+          {!s && !w.busy && (
+            <button disabled={!capabilities?.script} onClick={() => { setSelectedHistoryId(""); setEditing(false); void w.generate("live") }} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-40">
+              <Sparkle className="size-4" />AI 生成我的剧本
+            </button>
+          )}
+          {s && <div className="grid items-stretch gap-6 lg:grid-cols-2">
+            <section className="flex min-w-0 flex-col rounded-lg border border-line bg-card lg:h-[600px]">
+              <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
                 <h2 className="text-[15px] font-bold">对话剧本</h2>
-                <button disabled={w.busy} onClick={() => setEditing(!editing)} className="text-[13px] text-primary">{editing ? "预览剧本" : "编辑剧本"}</button>
+                <div className="flex items-center gap-2">
+                  <button disabled={w.busy} onClick={() => setEditing(!editing)} className="px-2 py-2 text-[13px] text-primary">{editing ? "预览剧本" : "编辑剧本"}</button>
+                  <button disabled={w.busy || !capabilities?.script} onClick={() => { setSelectedHistoryId(""); setEditing(false); void w.generate("live") }} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-40">
+                    <Sparkle className="size-4" />{w.busy ? "生成处理中…" : "重新生成剧本"}
+                  </button>
+                </div>
               </div>
-              <div className="space-y-5 p-5">
+              <div className="min-h-0 flex-1 space-y-5 p-5 lg:overflow-y-auto">
                 {s.scenes.map((scene, i) => {
                   const character = characters.find((c) => c.name === scene.speaker)
                   return <div key={scene.index} className={"flex gap-3 " + (i % 2 ? "flex-row-reverse" : "")}>
@@ -56,20 +68,25 @@ export default function ContentOutput({ step, workflow: w, capabilities, charact
                     </div>
                   </div>
                 })}
-                <button disabled={w.busy} onClick={w.saveChanges} className="rounded-lg border border-line px-4 py-2 text-[13px] text-primary">保存剧本</button>
               </div>
             </section>
-            <section className="min-w-0">
-              <h2 className="text-[15px] font-bold">视频预览</h2>
-              {w.draft?.video && !videoStale ? <video controls preload="metadata" src={w.draft.video.url} className="mt-4 aspect-[9/16] max-h-[460px] w-full rounded-lg bg-black object-contain" /> : (
-                <div className="mt-4 flex aspect-video items-center justify-center gap-4 rounded-lg border border-line bg-card p-5">
-                  {characters.slice(0, 3).map((c) => c.img ? <img key={c.id} src={c.img} alt={c.name + "角色预览"} className="size-16 rounded-lg object-cover sm:size-20" /> : <span key={c.id} className="text-[32px]">{c.emoji}</span>)}
-                </div>
-              )}
-              <p className="mt-3 text-[13px] text-sub">{videoStale ? "台词已修改，需重新生成成片。" : w.draft?.video ? `成片已生成 · ${w.draft.video.provider === "wan" ? "通义万相" : "角色一致性合成"}` : "尚未生成视频"}</p>
-              <button disabled={w.busy || !capabilities?.video} onClick={w.render} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"><Sparkle className="size-4" />{w.draft?.video ? "重新生成成片" : "确认剧本并生成视频"}</button>
-              <p className="mt-2 text-[12px] text-sub">{capabilities?.video ? "包含中文配音与画面字幕 · 最长 60 秒" : "视频服务未配置"}</p>
-              {w.draft?.prompts && <details className="mt-5 border-t border-line pt-4"><summary className="cursor-pointer text-[14px]">视频 Prompt</summary>{w.draft.prompts.clips.map((clip) => <p key={clip.index} className="mt-3 whitespace-pre-wrap break-words text-[13px] text-sub">{clip.prompt}</p>)}</details>}
+            <section className="flex min-w-0 flex-col rounded-lg border border-line bg-card lg:h-[600px]">
+              <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+                <h2 className="text-[15px] font-bold">视频预览</h2>
+                <button disabled={w.busy || !capabilities?.video} onClick={w.render} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-40">
+                  <Sparkle className="size-4" />{w.draft?.video ? "重新生成视频" : "生成视频"}
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 p-5 lg:overflow-y-auto">
+                {w.draft?.video && !videoStale ? <video controls preload="metadata" src={w.draft.video.url} className="aspect-[9/16] max-h-[460px] w-full rounded-lg bg-black object-contain" /> : (
+                  <div className="flex aspect-video items-center justify-center gap-4 rounded-lg border border-line bg-canvas p-5">
+                    {characters.slice(0, 3).map((c) => c.img ? <img key={c.id} src={c.img} alt={c.name + "角色预览"} className="size-16 rounded-lg object-cover sm:size-20" /> : <span key={c.id} className="text-[32px]">{c.emoji}</span>)}
+                  </div>
+                )}
+                <p className="mt-3 text-[13px] text-sub">{videoStale ? "台词已修改，需重新生成视频。" : w.draft?.video ? `视频已生成 · ${w.draft.video.provider === "wan" ? "通义万相" : "角色一致性合成"}` : "尚未生成视频"}</p>
+                <p className="mt-2 text-[12px] text-sub">{capabilities?.video ? "包含中文配音与画面字幕 · 最长 60 秒" : "视频服务未配置"}</p>
+                {w.draft?.prompts && <details className="mt-5 border-t border-line pt-4"><summary className="cursor-pointer text-[14px]">视频 Prompt</summary>{w.draft.prompts.clips.map((clip) => <p key={clip.index} className="mt-3 whitespace-pre-wrap break-words text-[13px] text-sub">{clip.prompt}</p>)}</details>}
+              </div>
             </section>
           </div>}
         </>
