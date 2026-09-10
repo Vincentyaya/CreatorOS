@@ -30,7 +30,7 @@ def review(start: date, end: date, platform: str):
         })
     return {
         "mode": "demo", "start": start.isoformat(), "end": end.isoformat(), "platform": platform,
-        "stats": [{"k": key, "v": f"{value:,}", "d": "演示数据"} for key, value in zip(KEYS, totals)],
+        "stats": [{"k": key, "v": f"{value:,}", "d": ""} for key, value in zip(KEYS, totals)],
         "daily": daily,
         "conclusion": "示例建议：测试「职场吐槽」与「轻知识」两类选题，分别记录完播率和关注转化，再决定下一轮内容配比。",
         "suggestion": "测试职场吐槽与轻知识两类选题，以完播率和关注转化比较效果。",

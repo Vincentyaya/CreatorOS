@@ -250,14 +250,18 @@ def create_app(data_dir=None):
         if body.mode == "live":
             require_capability("analysis")
         path = None
+        catalog_item = None
         if body.catalogId:
+            catalog_item = next((item for item in trends.catalog().get("videos", []) if item.get("id") == body.catalogId), None)
+            if catalog_item is None:
+                raise HTTPException(404, "热点内容不存在")
             path = trend_media(body.catalogId, "final_video.mp4")
         elif body.uploadId:
             uploaded = require_record("upload", body.uploadId)
             if uploaded["extension"] not in (".mp4", ".mov"):
                 raise HTTPException(400, "拆解需要上传视频文件")
             path = store.directory / "uploads" / (uploaded["id"] + uploaded["extension"])
-        return jobs.submit("analysis", lambda update: store.put("analysis", engine.analyze(body, acct, path, update)))
+        return jobs.submit("analysis", lambda update: store.put("analysis", engine.analyze(body, acct, path, update, catalog_item)))
 
     @app.get("/api/references/{identifier}/video")
     def reference_video(identifier: str):

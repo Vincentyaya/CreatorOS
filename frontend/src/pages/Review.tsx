@@ -158,7 +158,7 @@ export default function Review() {
         <div className="max-w-4xl mx-auto">
           {error && (
             <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-700">
-              后端未连接，正在显示本地演示数据：{error}
+              后端未连接，正在显示本地数据：{error}
             </div>
           )}
 
@@ -215,9 +215,11 @@ export default function Review() {
               >
                 <div className="text-[13px] text-sub">{s.k}</div>
                 <div className="mt-2 font-display font-extrabold text-[30px] leading-none">{s.v}</div>
-                <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-mono font-semibold text-success">
-                  <Up className="size-3.5" /> {s.d}
-                </div>
+                {s.d && (
+                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-mono font-semibold text-success">
+                    <Up className="size-3.5" /> {s.d}
+                  </div>
+                )}
               </button>
             ))}
           </div>

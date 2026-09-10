@@ -57,7 +57,7 @@ def prompt_pack(reverse, account):
     }
 
 
-def analyze(body: AnalysisInput, account, upload_path: Path | None, update):
+def analyze(body: AnalysisInput, account, upload_path: Path | None, update, catalog_item=None):
     update("读取参考材料")
     subtitles = Subtitles(language="zh", full_text=body.transcript)
     evidence = "demo"
@@ -75,13 +75,27 @@ def analyze(body: AnalysisInput, account, upload_path: Path | None, update):
     elif upload_path or body.url:
         update("分析视频画面与可见字幕")
         if upload_path:
-            try:
-                reverse = reverse_prompt.reverse(upload_path, subtitles)
-                evidence = "video"
-            except Exception:
-                update("整段视频理解不可用，降级到关键帧")
-                reverse = reverse_prompt.reverse_from_frames(upload_path, subtitles)
-                evidence = "keyframes"
+            if upload_path.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"):
+                update("分析热点封面与内容元数据")
+                item = catalog_item or {}
+                context = (
+                    "本次只能读取热点内容的真实封面与已核验元数据，未取得完整视频文件。"
+                    f"\n标题：{item.get('title') or body.title}"
+                    f"\n内容方向：{item.get('angle', '')}"
+                    f"\n分类：{item.get('category', '')}"
+                    "\n请结合封面可见信息进行多模态拆解。镜头节奏、运镜、声音和完整剧情只能给出创作建议，"
+                    "必须明确为未验证，不得声称观看了完整视频。输出可复用的等效 Prompt，不复制原角色、台词和画面。"
+                )
+                reverse = generate_json(context, ReversePrompt, image_paths=[upload_path])
+                evidence = "cover"
+            else:
+                try:
+                    reverse = reverse_prompt.reverse(upload_path, subtitles)
+                    evidence = "video"
+                except Exception:
+                    update("整段视频理解不可用，降级到关键帧")
+                    reverse = reverse_prompt.reverse_from_frames(upload_path, subtitles)
+                    evidence = "keyframes"
         else:
             update("读取公开视频")
             with tempfile.TemporaryDirectory(prefix="creatoros-source-") as directory:

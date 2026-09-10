@@ -1,5 +1,7 @@
 {
-  "description": "This AI-driven content growth platform empowers creators to generate viral content efficiently, offering tools for trend analysis, character development, and performance review.",
+  "title": "CreatorOS：让内容增长可复制",
+  "description": "CreatorOS AI 内容增长操作系统",
+  "language": "zh-CN",
   "robots": {
     "index": false
   },

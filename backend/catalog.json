@@ -2,13 +2,17 @@
   "mode": "source",
   "verifiedAt": "2026-09-09",
   "notice": "仅展示已核验来源；点击封面可查看原平台内容。",
-  "picks": [],
+  "picks": [
+    {"topic":"#调休的尽头是打工","match":92,"angle":"猫狗吐槽人类：为什么连休息都要抱歉？","hot":"340%","referenceId":"xhs-salary"},
+    {"topic":"#周一综合症急救指南","match":88,"angle":"铁柱盲目乐观 VS 甜甜清醒吐槽，谁能治好周一？","hot":"210%","referenceId":"bili-interview"},
+    {"topic":"#成年人的崩溃静音模式","match":84,"angle":"把加班的心声，翻译成猫狗听得懂的憨话","hot":"160%","referenceId":"bili-bathhouse"}
+  ],
   "videos": [
-    {"id":"xhs-salary","platform":"xhs","title":"《没捂热的工资》","author":"","url":"https://xhslink.cn/o/721Y34kRL7v","poster":"/api/trends/xhs-salary/cover","likes":"","plays":"","angle":"毒舌猫用一句反转把发工资的快乐拉回打工现实","publishedAt":"","category":"萌宠 + 职场吐槽","metricsMode":"unavailable","localReference":false},
-    {"id":"xhs-mugi-beach","platform":"xhs","title":"Mugi怎么跑来海边玩了？","author":"","url":"https://xhslink.cn/o/9U6Vcd5gHnL","poster":"/api/trends/xhs-mugi-beach/cover","likes":"","plays":"","angle":"用橘猫旅行场景承载日语学习内容，形成萌宠与教育的组合","publishedAt":"","category":"萌宠 + 日语教育","metricsMode":"unavailable","localReference":false},
-    {"id":"xhs-family-cooking","platform":"xhs","title":"这一家人只有饭是熟的","author":"","url":"https://xhslink.cn/o/6YpF6MbQ6xl","poster":"/api/trends/xhs-family-cooking/cover","likes":"","plays":"","angle":"用一句双关标题制造家庭喜剧悬念，再由拟人萌宠推进剧情","publishedAt":"","category":"萌宠 + 家庭喜剧","metricsMode":"unavailable","localReference":false},
-    {"id":"bili-interview","platform":"bili","title":"咪今天去面试啦，找工作真的好难呀","author":"橘猫胖墩墩","url":"https://b23.tv/MPtZrB2","poster":"/api/trends/bili-interview/cover","likes":"790","plays":"9,173","angle":"让猫咪经历真实求职情境，以角色代入承接年轻人的就业共鸣","publishedAt":"2026-09-08","category":"萌宠 + 职场","metricsMode":"source","localReference":false},
-    {"id":"bili-shanghai-night","platform":"bili","title":"今天去上海看夜景、吃生煎，还去游乐园玩了哦","author":"橘猫胖墩墩","url":"https://b23.tv/j9CBGZ7","poster":"/api/trends/bili-shanghai-night/cover","likes":"2,178","plays":"39,967","angle":"以拟人猫咪的一日游串联城市地标、美食和游乐体验","publishedAt":"2026-09-05","category":"萌宠 + 城市 Vlog","metricsMode":"source","localReference":false},
-    {"id":"bili-bathhouse","platform":"bili","title":"今天跟闺蜜去洗浴中心搓澡玩水、吃韩料喽","author":"橘猫胖墩墩","url":"https://b23.tv/0WjF5eL","poster":"/api/trends/bili-bathhouse/cover","likes":"40,970","plays":"2,429,503","angle":"把闺蜜生活 Vlog 换成拟人猫咪视角，强化反差和连续角色关系","publishedAt":"2026-08-10","category":"萌宠 + 生活 Vlog","metricsMode":"source","localReference":false}
+    {"id":"xhs-salary","platform":"xhs","title":"《没捂热的工资》","author":"","url":"https://xhslink.cn/o/721Y34kRL7v","poster":"/api/trends/xhs-salary/cover","likes":"","plays":"","angle":"毒舌猫用一句反转把发工资的快乐拉回打工现实","publishedAt":"","category":"萌宠 + 职场吐槽","metricsMode":"unavailable","localReference":true},
+    {"id":"xhs-mugi-beach","platform":"xhs","title":"Mugi怎么跑来海边玩了？","author":"","url":"https://xhslink.cn/o/9U6Vcd5gHnL","poster":"/api/trends/xhs-mugi-beach/cover","likes":"","plays":"","angle":"用橘猫旅行场景承载日语学习内容，形成萌宠与教育的组合","publishedAt":"","category":"萌宠 + 日语教育","metricsMode":"unavailable","localReference":true},
+    {"id":"xhs-family-cooking","platform":"xhs","title":"这一家人只有饭是熟的","author":"","url":"https://xhslink.cn/o/6YpF6MbQ6xl","poster":"/api/trends/xhs-family-cooking/cover","likes":"","plays":"","angle":"用一句双关标题制造家庭喜剧悬念，再由拟人萌宠推进剧情","publishedAt":"","category":"萌宠 + 家庭喜剧","metricsMode":"unavailable","localReference":true},
+    {"id":"bili-interview","platform":"bili","title":"咪今天去面试啦，找工作真的好难呀","author":"橘猫胖墩墩","url":"https://b23.tv/MPtZrB2","poster":"/api/trends/bili-interview/cover","likes":"790","plays":"9,173","angle":"让猫咪经历真实求职情境，以角色代入承接年轻人的就业共鸣","publishedAt":"2026-09-08","category":"萌宠 + 职场","metricsMode":"source","localReference":true},
+    {"id":"bili-shanghai-night","platform":"bili","title":"今天去上海看夜景、吃生煎，还去游乐园玩了哦","author":"橘猫胖墩墩","url":"https://b23.tv/j9CBGZ7","poster":"/api/trends/bili-shanghai-night/cover","likes":"2,178","plays":"39,967","angle":"以拟人猫咪的一日游串联城市地标、美食和游乐体验","publishedAt":"2026-09-05","category":"萌宠 + 城市 Vlog","metricsMode":"source","localReference":true},
+    {"id":"bili-bathhouse","platform":"bili","title":"今天跟闺蜜去洗浴中心搓澡玩水、吃韩料喽","author":"橘猫胖墩墩","url":"https://b23.tv/0WjF5eL","poster":"/api/trends/bili-bathhouse/cover","likes":"40,970","plays":"2,429,503","angle":"把闺蜜生活 Vlog 换成拟人猫咪视角，强化反差和连续角色关系","publishedAt":"2026-08-10","category":"萌宠 + 生活 Vlog","metricsMode":"source","localReference":true}
   ]
 }

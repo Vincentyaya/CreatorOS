@@ -66,14 +66,17 @@ def test_product_demo_flow(tmp_path: Path):
         references = catalog.json()["videos"]
         assert len(references) == 6
         assert {video["platform"] for video in references} == {"xhs", "bili"}
-        assert catalog.json()["picks"] == []
+        assert len(catalog.json()["picks"]) == 3
         assert len(client.get("/api/platforms").json()) == 5
         for reference in references:
-            assert reference["localReference"] is False
+            assert reference["localReference"] is True
             expected_host = "xhslink.cn" if reference["platform"] == "xhs" else "b23.tv"
             assert reference["url"].startswith(f"https://{expected_host}/")
             cover = client.get(reference["poster"])
             assert cover.status_code == 200 and cover.headers["content-type"] == "image/jpeg"
+            video = client.get(f"/api/trends/{reference['id']}/video")
+            assert video.status_code == 200 and video.headers["content-type"] == "video/mp4"
+            assert len(video.content) > 1024
 
         topic = client.post("/api/topics", json={
             "id": "topic-test", "topic": "复盘推荐选题", "angle": "用猫狗对话讲职场反差",
@@ -152,3 +155,47 @@ def test_avatar_generation_job(tmp_path: Path, monkeypatch):
         assert avatar["generated"] is True
         image = client.get(avatar["url"])
         assert image.status_code == 200 and image.headers["content-type"] == "image/png"
+
+
+def test_catalog_analysis_uses_bound_local_video(tmp_path: Path, monkeypatch):
+    from backend import engine
+
+    seen = {}
+
+    def fake_analyze(body, account, upload_path, update, catalog_item=None):
+        update("读取本地热点视频")
+        seen[body.catalogId] = upload_path
+        return {
+            "id": f"analysis-{body.catalogId}",
+            "mode": body.mode,
+            "evidence": "video",
+            "source": {
+                "title": body.title,
+                "url": body.url,
+                "uploadId": None,
+                "referenceId": body.catalogId,
+            },
+        }
+
+    monkeypatch.setattr(engine, "analyze", fake_analyze)
+    app = create_app(tmp_path)
+    with TestClient(app, headers=HEADERS) as client:
+        assert client.put("/api/account", json=account_payload()).status_code == 200
+        references = client.get("/api/catalog").json()["videos"]
+        for reference in references:
+            submitted = client.post("/api/analyses", json={
+                "mode": "live",
+                "catalogId": reference["id"],
+                "title": reference["title"],
+                "url": reference["url"],
+            })
+            assert submitted.status_code == 202
+            result = wait_job(client, submitted.json()["id"])
+            assert result["source"]["referenceId"] == reference["id"]
+
+    assert set(seen) == {reference["id"] for reference in references}
+    for identifier, path in seen.items():
+        assert path.is_file()
+        assert path.parent.name == identifier
+        assert path.name == "final_video.mp4"
+        assert path.stat().st_size > 1024

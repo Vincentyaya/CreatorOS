@@ -65,16 +65,16 @@ export default function Landing({ go }: { go: (k: PageKey) => void }) {
     <div className="min-h-full">
       {/* nav */}
       <header className="sticky top-0 z-20 border-b border-line bg-canvas/80 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-6 h-[68px] flex items-center">
+        <div className="mx-auto flex min-h-[68px] max-w-6xl flex-wrap items-center px-6 py-3 md:h-[68px] md:flex-nowrap md:py-0">
           <div className="flex items-center gap-2.5">
             <Logo className="size-7" />
             <span className="font-display font-extrabold text-[17px] tracking-tight">CreatorOS</span>
           </div>
-          <nav className="ml-10 hidden md:flex items-center gap-8 text-[14px] text-sub">
-            <a className="hover:text-ink transition-colors" href="#product">产品</a>
-            <a className="hover:text-ink transition-colors" href="#loop">解决方案</a>
-            <a className="hover:text-ink transition-colors" href="#cases">案例</a>
-            <button onClick={() => go("about")} className="hover:text-ink transition-colors">关于</button>
+          <nav className="order-3 mt-3 grid w-full grid-cols-4 border-t border-line pt-2 text-center text-[13px] text-sub md:order-none md:ml-10 md:mt-0 md:flex md:w-auto md:items-center md:gap-8 md:border-0 md:pt-0 md:text-left md:text-[14px]">
+            <a className="py-1.5 transition-colors hover:text-ink md:py-0" href="#product">产品</a>
+            <a className="py-1.5 transition-colors hover:text-ink md:py-0" href="#loop">解决方案</a>
+            <a className="py-1.5 transition-colors hover:text-ink md:py-0" href="#cases">案例</a>
+            <button onClick={() => go("about")} className="py-1.5 transition-colors hover:text-ink md:py-0">关于</button>
           </nav>
           <button
             onClick={() => go("login")}
