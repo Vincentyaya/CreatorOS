@@ -202,9 +202,9 @@ def render_video(draft, directory, update):
     if not prompts.clips:
         raise ValueError("没有可用于生成的视频 Prompt")
     if draft["mode"] == "live" and config.VIDEO_RENDER_STRATEGY == "provider":
-        update("准备 HappyHorse 角色参考图")
+        update("准备角色参考图")
         references = composed_video.character_reference_paths(draft, directory.parents[1], directory / "references")
-        update("HappyHorse 角色一致视频生成中")
+        update("角色一致视频生成中")
         seconds = max(3, sum(s.duration_sec for s in script.scenes))
         result = video_generator.generate_videos(
             prompts, directory, duration=str(seconds), reference_paths=references,

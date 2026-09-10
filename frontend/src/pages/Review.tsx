@@ -112,7 +112,6 @@ export default function Review() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [metric, setMetric] = useState<MetricKey>("浏览")
-  const [zoomed, setZoomed] = useState(false)
   const [added, setAdded] = useState(false)
 
   useEffect(() => {
@@ -132,6 +131,11 @@ export default function Review() {
   const series = data.daily.map((day) => ({ date: day.date, value: day[metricField] ?? 0 }))
   const maxValue = Math.max(1, ...series.map((day) => day.value))
 
+  const chartPoints = series.map((day, index) => ({
+    ...day,
+    x: 32 + (index / Math.max(1, series.length - 1)) * 656,
+    y: 210 - (day.value / maxValue) * 170,
+  }))
   const addToPool = () => {
     const referenceId = `review-${platform}-${start}-${end}`
     let pool: TopicPoolItem[] = []
@@ -226,28 +230,33 @@ export default function Review() {
 
           {/* daily trend */}
           <div className="mt-6 rounded-lg border border-line bg-card p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[15px] font-semibold text-ink">{metric}趋势</div>
-                <div className="mt-1 text-[12px] text-sub">点击上方指标切换趋势</div>
-              </div>
-              <button type="button" onClick={() => setZoomed(true)} className="border border-line bg-card px-3 py-2 text-[13px] font-semibold text-ink transition-colors hover:border-primary/40" aria-label={`放大查看${metric}趋势`}>
-                放大查看
-              </button>
+            <div>
+              <div className="text-[15px] font-semibold text-ink">{metric}趋势</div>
+              <div className="mt-1 text-[12px] text-sub">点击上方指标切换趋势 · 每日颗粒度</div>
             </div>
-            <div className="mt-4 flex items-end gap-1.5 h-24">
-              {series.map((day) => (
-                <div key={day.date} className="flex-1 min-w-0 group relative flex flex-col items-center justify-end" title={`${day.date} · ${metric} ${day.value.toLocaleString()}`}>
-                  <div
-                    className="w-full rounded-t-md bg-gradient-to-t from-primary/70 to-violet/70 group-hover:from-primary group-hover:to-violet transition-colors"
-                    style={{ height: `${Math.max(8, Math.round((day.value / maxValue) * 100))}%` }}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] font-mono text-sub">
-              <span>{data.daily[0]?.date}</span>
-              <span>{data.daily[data.daily.length - 1]?.date}</span>
+            <div className="mt-5 overflow-x-auto pb-2">
+              <svg viewBox="0 0 720 240" role="img" aria-label={`${metric}每日趋势折线图`} className="h-[280px] min-w-[620px] w-full">
+                {[0, 1, 2, 3, 4].map((line) => (
+                  <line key={line} x1="32" x2="688" y1={40 + line * 42.5} y2={40 + line * 42.5} className="stroke-line" strokeWidth="1" />
+                ))}
+                <polyline points={chartPoints.map((point) => point.x + "," + point.y).join(" ")} fill="none" className="stroke-primary" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                {chartPoints.map((point) => {
+                  const tooltipX = Math.min(600, Math.max(4, point.x - 58))
+                  const tooltipY = Math.max(4, point.y - 48)
+                  return (
+                    <g key={point.date} className="group" aria-label={`${point.date}，${metric} ${point.value.toLocaleString()}`}>
+                      <line x1={point.x} x2={point.x} y1="32" y2="210" stroke="transparent" strokeWidth="24" />
+                      <circle cx={point.x} cy={point.y} r="5" className="fill-card stroke-primary transition-all group-hover:r-[7px]" strokeWidth="3" />
+                      <g className="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100">
+                        <rect x={tooltipX} y={tooltipY} width="116" height="38" rx="6" className="fill-ink" />
+                        <text x={tooltipX + 58} y={tooltipY + 15} textAnchor="middle" className="fill-white text-[11px] font-semibold">{metric} {point.value.toLocaleString()}</text>
+                        <text x={tooltipX + 58} y={tooltipY + 29} textAnchor="middle" className="fill-white/70 text-[9px]">{point.date}</text>
+                      </g>
+                      <text x={point.x} y="232" textAnchor="middle" className="fill-sub text-[10px] font-mono">{point.date.slice(5)}</text>
+                    </g>
+                  )
+                })}
+              </svg>
             </div>
           </div>
 
@@ -269,29 +278,6 @@ export default function Review() {
         </div>
       </div>
 
-      {zoomed && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4 backdrop-blur-[2px]" onClick={() => setZoomed(false)}>
-          <section className="w-full max-w-5xl rounded-lg border border-line bg-card p-5 shadow-2xl sm:p-7" onClick={(event) => event.stopPropagation()} aria-modal="true" role="dialog" aria-label={`${metric}每日趋势`}>
-            <div className="flex items-start justify-between gap-4">
-              <div><h2 className="font-display text-[21px] font-extrabold">{metric}每日趋势</h2><p className="mt-1 text-[13px] text-sub">{start} 至 {end} · 每日颗粒度</p></div>
-              <button type="button" onClick={() => setZoomed(false)} className="grid size-9 place-items-center rounded-lg text-[22px] text-sub hover:bg-canvas hover:text-ink" aria-label="关闭">×</button>
-            </div>
-            <div className="mt-7 overflow-x-auto pb-2">
-              <div className="flex h-72 items-end gap-3" style={{ minWidth: `${Math.max(680, series.length * 72)}px` }}>
-                {series.map((day) => (
-                  <div key={day.date} className="flex h-full min-w-[56px] flex-1 flex-col items-center justify-end">
-                    <span className="mb-2 text-[12px] font-semibold text-ink">{day.value.toLocaleString()}</span>
-                    <div className="flex h-[210px] w-full items-end">
-                      <div className="w-full rounded-t-md bg-primary transition-colors hover:bg-violet" style={{ height: `${Math.max(5, Math.round((day.value / maxValue) * 100))}%` }} />
-                    </div>
-                    <span className="mt-2 text-[11px] font-mono text-sub">{day.date.slice(5)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   )
 }
