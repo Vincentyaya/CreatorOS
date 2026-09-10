@@ -13,6 +13,8 @@ import { loadAccountSettings, saveAccountSettings, type AccountSettings } from "
 import { api, errorText, type Capabilities } from "./api"
 
 const PAGE_KEY = "creatoros_page"
+const LOGIN_KEY = "creatoros_login_account"
+const PUBLIC_PAGES = new Set<PageKey>(["landing", "login", "about"])
 
 export default function App() {
   const [account, setAccount] = useState(loadAccountSettings)
@@ -42,20 +44,24 @@ export default function App() {
     setAccount(settings)
   }
   const [page, setPage] = useState<PageKey>(() => {
-    const saved = typeof localStorage !== "undefined" ? localStorage.getItem(PAGE_KEY) : null
-    return (saved as PageKey) || "landing"
+    if (typeof localStorage === "undefined") return "landing"
+    const saved = localStorage.getItem(PAGE_KEY) as PageKey | null
+    const loggedIn = Boolean(localStorage.getItem(LOGIN_KEY))
+    return saved && (PUBLIC_PAGES.has(saved) || loggedIn) ? saved : "landing"
   })
   const go = (k: PageKey) => {
-    setPage(k)
+    const loggedIn = typeof localStorage !== "undefined" && Boolean(localStorage.getItem(LOGIN_KEY))
+    const target = PUBLIC_PAGES.has(k) || loggedIn ? k : "login"
+    setPage(target)
     try {
-      localStorage.setItem(PAGE_KEY, k)
+      localStorage.setItem(PAGE_KEY, target)
     } catch {
       /* ignore */
     }
     window.scrollTo?.({ top: 0 })
   }
   const logout = () => {
-    try { localStorage.removeItem("creatoros_login_account") } catch { /* Account content remains stored. */ }
+    try { localStorage.removeItem(LOGIN_KEY) } catch { /* Account content remains stored. */ }
     go("login")
   }
 

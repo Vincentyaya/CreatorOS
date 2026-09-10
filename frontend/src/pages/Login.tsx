@@ -15,11 +15,9 @@ export default function Login({ go }: { go: (k: PageKey) => void }) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    // 留空直接进入 demo 账号；或校验正确的账号密码
-    const blank = account.trim() === "" && password === ""
-    if (blank || (account.trim() === ACCOUNT && PASSWORDS.includes(password))) {
+    if (account.trim() === ACCOUNT && PASSWORDS.includes(password)) {
       setError("")
-      try { localStorage.setItem("creatoros_login_account", account.trim() || "体验账号") } catch { /* Session label is optional. */ }
+      try { localStorage.setItem("creatoros_login_account", account.trim()) } catch { /* Session label is optional. */ }
       go("dashboard")
     } else {
       setError("账号或密码不正确，请重试")
@@ -76,6 +74,7 @@ export default function Login({ go }: { go: (k: PageKey) => void }) {
                 className="mt-1.5 w-full rounded-xl border border-line bg-card px-4 py-3 text-[14px] outline-none transition-colors focus:border-primary/50"
                 placeholder="请输入手机号"
                 autoComplete="username"
+                required
               />
             </div>
             <div>
@@ -88,6 +87,7 @@ export default function Login({ go }: { go: (k: PageKey) => void }) {
                   className="w-full rounded-xl border border-line bg-card px-4 py-3 pr-11 text-[14px] outline-none transition-colors focus:border-primary/50"
                   placeholder="请输入密码"
                   autoComplete="current-password"
+                  required
                 />
                 <button
                   type="button"

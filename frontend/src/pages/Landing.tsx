@@ -1,7 +1,7 @@
 import { NAV, PageKey } from "../shared"
 import Logo from "../Logo"
 
-function LoopRing({ go }: { go: (k: PageKey) => void }) {
+function LoopRing() {
   const R = 40 // percent radius
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[460px]">
@@ -41,20 +41,19 @@ function LoopRing({ go }: { go: (k: PageKey) => void }) {
         const x = 50 + R * Math.cos(angle)
         const y = 50 + R * Math.sin(angle)
         return (
-          <button
+          <div
             key={key}
-            onClick={() => go(key)}
             style={{ left: `${x}%`, top: `${y}%` }}
-            className="group absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5"
+            className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5"
           >
-            <div className="size-14 rounded-2xl bg-card border border-line grid place-items-center shadow-[0_10px_30px_-14px_rgba(15,23,42,0.3)] transition-all group-hover:-translate-y-0.5 group-hover:border-primary/40">
+            <div className="size-14 rounded-2xl bg-card border border-line grid place-items-center shadow-[0_10px_30px_-14px_rgba(15,23,42,0.3)]">
               <Icon className="size-6 text-primary" />
             </div>
             <div className="text-center">
               <div className="font-mono text-[10px] text-slate-400">{num}</div>
               <div className="text-[12px] font-semibold whitespace-nowrap">{label}</div>
             </div>
-          </button>
+          </div>
         )
       })}
     </div>
@@ -110,7 +109,7 @@ export default function Landing({ go }: { go: (k: PageKey) => void }) {
           <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-br from-primary/5 to-violet/5 blur-2xl" />
           <div className="relative rounded-[28px] border border-line bg-card/60 p-8 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.3)]">
             <div className="mb-4 text-center text-[12px] font-mono text-sub">五环节闭环 · 首尾相连</div>
-            <LoopRing go={go} />
+            <LoopRing />
           </div>
         </div>
       </section>
